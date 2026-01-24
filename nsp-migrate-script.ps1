@@ -13,8 +13,6 @@ $profileName  = "adb-profile"
 Select-AzSubscription -SubscriptionId $subscriptionId
  # Query ARG for Storage Accounts with VNet ACLs pointing to Databricks subnets
  
-
-
 $kql = @"
 resources
 | where type == "microsoft.storage/storageaccounts"
