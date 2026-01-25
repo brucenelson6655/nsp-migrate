@@ -2,3 +2,6 @@ apply-nsp.ps1
 bad-nsp-migrate.ps1
 create-nsp.ps1
 archive/
+__*
+*.log
+
