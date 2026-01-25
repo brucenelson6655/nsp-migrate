@@ -36,6 +36,8 @@ Start-Transcript -Path $logPath -Append
 # interavtive or unattended mode - set to $true to approve each association, false to run unattended
 $interactive = $Interactive
 
+
+
 if ($interactive -eq $true) {
     Write-Host "Running in interactive mode. You will be prompted for each Storage Account association."
 } else {
@@ -82,8 +84,29 @@ resources
 $storageAccounts = Search-AzGraph -Query $kql -Subscription $subscriptionId
 # if we find nothing (which usually doesn't happen because of DBFS) we can exit early
 
-Write-Host "Found $($storageAccounts.Count) Storage Accounts with Databricks VNet ACLs"
-if ($storageAccounts.Count -eq 0) {
+# Create an empty list of strings
+$associateStorageAccount = [System.Collections.Generic.List[object]]::New()
+
+foreach ($ssa in $storageAccounts) {  
+    if (Get-AzDenyAssignment -scope $ssa.id -ErrorAction SilentlyContinue) {
+        Write-Host "Skipping $($ssa.name) : identified as workspace default storage (DBFS)."
+        continue
+    }
+    $parts = $ssa.id -split '/'
+    $resourceGroupName = $parts[4]
+    $accountName = $parts[8]
+    $nspConfigs = Get-AzStorageNetworkSecurityPerimeterConfiguration -ResourceGroupName $resourceGroupName -AccountName $accountName
+    $nspCount = ($nspConfigs | Measure-Object).Count
+    if ($nspCount -gt 0) {
+        Write-Host "Skipping $($ssa.name) : already associated with NSP."
+        continue
+    }
+
+    $associateStorageAccount.Add($ssa)
+}
+
+Write-Host "Found $($associateStorageAccount.Count) Storage Accounts with Databricks VNet ACLs"
+if ($associateStorageAccount.Count -eq 0) {
     Write-Host "No Storage Accounts matched—no NSP work required."
     return
 }
@@ -122,7 +145,13 @@ if (-not (Get-AzNetworkSecurityPerimeter -Name $nspName -ResourceGroupName $reso
    $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name $profileName -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName
 } 
 
-foreach ($sa in $storageAccounts) {  
+# Create an empty list of strings
+$dynamicList = [System.Collections.Generic.List[object]]::New()
+
+
+
+
+foreach ($sa in $associateStorageAccount) {  
     if (Get-AzDenyAssignment -scope $sa.id -ErrorAction SilentlyContinue) {
         Write-Host "Skipping $($sa.name) : identified as workspace default storage (DBFS)."
         continue
@@ -142,7 +171,7 @@ foreach ($sa in $storageAccounts) {
         $promptMessage = "Associate $($sa.name) with NSP $($nspName) ? [Y/N, default: $defaultValue]"
         $response = Read-Host -Prompt $promptMessage
 
-        # # If the response is empty, use the default value. Otherwise, use the response.
+        # If the response is empty, use the default value. Otherwise, use the response.
         $userInput = if ([string]::IsNullOrEmpty($response)) { $defaultValue } else { $response }
 
         # Process the input (case-insensitive comparison)
@@ -157,5 +186,7 @@ foreach ($sa in $storageAccounts) {
         New-AzNetworkSecurityPerimeterAssociation -Name "$($sa.name)-Assoc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup -ProfileId $nspProfile.Id -PrivateLinkResourceId $sa.id -AccessMode 'Learning'  
     }
 }
+
+
 #stop logging
 Stop-Transcript
