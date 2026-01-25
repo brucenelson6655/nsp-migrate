@@ -14,4 +14,9 @@ This script automates the creation of a Network Security Perimeter (NSP) in Azur
 ### EXAMPLE
    ```
    ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>"
+```
+   #### To run unattended : 
+```
+   ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Interactive False
+
    ```

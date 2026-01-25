@@ -12,7 +12,11 @@
     and associates Storage Accounts with Databricks VNet ACLs to the NSP in learning mode.
     It logs all actions to a timestamped log file in the script's directory. 
 .EXAMPLE
+    Interactive mode (default):
     ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>"
+
+    Unattended mode:
+    ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Interactive False
 #>
 param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $Interactive=$true)
 
