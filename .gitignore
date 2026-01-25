@@ -4,4 +4,7 @@ create-nsp.ps1
 archive/
 __*
 *.log
-
+.gitignore
+*.ps1~
+*.ps1.old
+*.bak
