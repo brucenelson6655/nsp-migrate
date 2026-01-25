@@ -1,0 +1,1 @@
+SCript to update storage account (non DBFS) that are using serverless service endpoints to NSP service tags. 
