@@ -1,3 +1,13 @@
+## NSP (netowrk security perimeters) for Azure Storage accounts used by serverless compute : 
+
+We are adding a new networking feature that introduces a NSP (networking security perimeter) and employs a service tag that labels inbound serverless service endpoint traffic subnets (serverless stable endpoints). This enables greater connectivity and flexibility, allowing for expansion without hitting current resource limitations.
+
+## Motivation:
+
+The increasing demand for serverless services requires the creation of additional compute subscriptions to support more Virtual Machines (VMs). A significant challenge arises because new subnets within these subscriptions cannot be automatically allowlisted by existing customers (due to existing product constraints). This prevents horizontal scale-out and causes sharp edges to product experience.
+
+## Migration Script
+
 This script automates the creation of a Network Security Perimeter (NSP) in Azure and associates Storage Accounts with Databricks VNet ACLs to the NSP in learning mode. It logs all actions to a timestamped log file in the script's directory. 
 
 ## Parameters :
