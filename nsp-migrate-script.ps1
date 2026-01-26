@@ -34,7 +34,7 @@
    To Migrate specific a storage account or storeage accounts 
       ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Storage_Account_Names <storage account or comma seperated list of storeage accounts>
 .NOTES 
-   None
+   created by Bruce Nelson Databricks
 #>
 
 param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $NSP_Name="databricks-nsp", $NSP_Profile="adb-profile", $Storage_Account_Names, $Interactive=$true, $Remove_Serverless_ServiceEndpoints=$false)

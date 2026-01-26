@@ -78,3 +78,5 @@ You have the option to delete the existing serverless service endpoints once the
    ```
    ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Storage_Account_Names <storage account or comma seperated list of storeage accounts>
 ```
+
+###### created by: Bruce Nelson Databricks 
