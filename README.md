@@ -46,6 +46,21 @@ This script automates the creation of a Network Security Perimeter (NSP) in Azur
 
 * (optional) An array of Storage Account names to specifically target for association. If not provided, all Storage Accounts with Databricks VNet ACLs will be processed.
 
+### Running this script : 
+
+You can run this script in the Azure portal cloud shell (powershell). When run without parameters it will prompt for the Subscription ID, resource group and region to use / create the NSP and profile for that specific subscription. 
+
+You can modify the default NSP and profile names with the **NSP\_Name** and **NSP\_Profile** parameters. You can also target specific storage accounts by passing in a comma separated list of storage accounts  with the parameter **Storage\_Account\_Names**. 
+
+#### Interactive and Unattended mode : 
+
+This script can be run interactively which allows you to approve each change and step in the process, or you can run in unattended mode which will proceed to make changes without any prompting. This behavior is controlled  by the **Interactive** parameter with is defaulted to True (run interactively)
+
+#### Deleting Serverless Service Endpoints (optional) : 
+
+You have the option to delete the existing serverless service endpoints once the NSP is enabled. This action is not required and default is set to not delete after the NSP is associated. If you want to delete the serverless (stable) endpoint from your storage account once the NSP is associated, set **Remove\_Serverless\_ServiceEndpoints** to True. 
+
+
 ### EXAMPLES
    #### To Run interactive
    ```
