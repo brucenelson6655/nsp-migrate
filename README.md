@@ -1,38 +1,52 @@
-## NSP (network security perimeters) for Azure Storage accounts used by serverless compute : 
+### NSP (network security perimeters) for Azure Storage accounts used by serverless compute :
 
 We are adding a new networking feature that introduces a NSP (networking security perimeter) and employs a service tag that labels inbound serverless service endpoint traffic subnets (serverless stable endpoints). This enables greater connectivity and flexibility, allowing for expansion without hitting current resource limitations.
 
-## Motivation:
+### Motivation:
 
 The increasing demand for serverless services requires the creation of additional compute subscriptions to support more Virtual Machines (VMs). A significant challenge arises because new subnets within these subscriptions cannot be automatically allowlisted by existing customers (due to existing product constraints). This prevents horizontal scale-out and causes sharp edges to product experience.
 
-## Migration Script
+### Migration Script
 
-This script automates the creation of a Network Security Perimeter (NSP) in Azure and associates Storage Accounts with Databricks VNet ACLs to the NSP in learning mode. It logs all actions to a timestamped log file in the script's directory. 
+This script automates the creation of a Network Security Perimeter (NSP) in Azure and associates Storage Accounts with Databricks VNet ACLs to the NSP in learning mode. It logs all actions to a timestamped log file in the script's directory.
 
-## Parameters :
+### Parameters :
 
-### Subscription_Id
-    The Azure Subscription ID where the NSP will be created.
-### Resource_Group
-    The name of the Resource Group where the NSP will be created.
-### Azure_Region
-    The Azure region where the NSP will be created.
-### Interactive
-    (optional) Boolean flag to indicate whether to run in interactive mode (prompt for each association) or unattended mode.
-    Default is $true (interactive mode).
-### Remove_Serverless_ServiceEndpoints
-    (optional) Boolean flag to indicate whether to remove service endpoints from Storage Accounts after associating with NSP in unattended mode.
-    Default is $false.  
-### NSP_Name
-    (optional) The name of the Network Security Perimeter to be created. Default is "databricks-nsp".
-### NSP_Profile
-    (optional) The name of the Network Security Perimeter Profile to be created. Default is "adb-profile".
-### Storage_Account_Names
-    (optional) An array of Storage Account names to specifically target for association. If not provided, all Storage Accounts with Databricks VNet ACLs will be processed.
+#### Subscription\_Id:
 
+* The Azure Subscription ID where the NSP will be created.
 
-### EXAMPLE
+#### Resource\_Group:
+
+* The name of the Resource Group where the NSP will be created.
+
+#### Azure\_Region:
+
+* The Azure region where the NSP will be created.
+
+#### Interactive:
+
+* (optional) Boolean flag to indicate whether to run in interactive mode (prompt for each association) or unattended mode.  
+* Default is $true (interactive mode).
+
+#### Remove\_Serverless\_ServiceEndpoints:
+
+* (optional) Boolean flag to indicate whether to remove service endpoints from Storage Accounts after associating with NSP in unattended mode.  
+* The default is $false.  
+
+#### NSP\_Name:
+
+* (optional) The name of the Network Security Perimeter to be created. Default is "databricks-nsp".
+
+#### NSP\_Profile:
+
+* (optional) The name of the Network Security Perimeter Profile to be created. The default is "adb-profile".
+
+#### Storage\_Account\_Names:
+
+* (optional) An array of Storage Account names to specifically target for association. If not provided, all Storage Accounts with Databricks VNet ACLs will be processed.
+
+### EXAMPLES
    #### To Run interactive
    ```
    ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>"

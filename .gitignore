@@ -8,3 +8,4 @@ __*
 *.ps1~
 *.ps1.old
 *.bak
+.DS_Store
