@@ -11,6 +11,12 @@
 .PARAMETER Remove_Serverless_ServiceEndpoints
     (optional) Boolean flag to indicate whether to remove service endpoints from Storage Accounts after associating with NSP in unattended mode.
     Default is $false.  
+.PARAMETER NSP_Name
+    (optional) The name of the Network Security Perimeter to be created. Default is "databricks-nsp".
+.PARAMETER NSP_Profile
+    (optional) The name of the Network Security Perimeter Profile to be created. Default is "adb-profile".
+.PARAMETER Storage_Account_Names
+    (optional) An array of Storage Account names to specifically target for association. If not provided, all Storage Accounts with Databricks VNet ACLs will be processed.
 .DESCRIPTION
     This script automates the creation of a Network Security Perimeter (NSP) in Azure
     and associates Storage Accounts with Databricks VNet ACLs to the NSP in learning mode.
@@ -24,16 +30,21 @@
 
     Remove Service endpoints in unattended mode 
    ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Interactive False -Remove_Serverless_ServiceEndpoints True
+
+   To Migrate specific a storage account or storeage accounts 
+      ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Storage_Account_Names <storage account or comma seperated list of storeage accounts>
+.NOTES 
+   None
 #>
 
-param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $Interactive=$true, $Remove_Serverless_ServiceEndpoints=$false)
+param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $NSP_Name="databricks-nsp", $NSP_Profile="adb-profile", $Storage_Account_Names, $Interactive=$true, $Remove_Serverless_ServiceEndpoints=$false)
 
 # Set variables
 $subscriptionId = $Subscription_Id
 $resourceGroup = $Resource_Group
-$nspName    = "databricks-nsp"
+$nspName    = $NSP_Name
 $location    = $Azure_Region
-$profileName  = "adb-profile"
+$profileName  = $NSP_Profile
 # Define the log file path with a unique timestamp (YYYYMMdd_HHmmss format)
 $timeStamp = Get-Date -Format yyyyMMdd_HHmmss
 $logFileName = "nsp-migrate-log_$timeStamp.log"
@@ -135,6 +146,21 @@ resources
 | project name, id, resourceGroup, subscriptionId, vnetRuleId = tostring(vnr.id), properties
 | summarize by id, name
 "@
+
+$ksqlstorageaccounts = @"
+resources
+| where type == "microsoft.storage/storageaccounts"
+| where name in ('$($Storage_Account_Names -join "','")')
+| project name, id, resourceGroup, subscriptionId, properties
+| summarize by id, name
+"@
+
+if ($Storage_Account_Names) {
+    Write-Host "Filtering for specified Storage Accounts: $Storage_Account_Names"
+    $kql = $ksqlstorageaccounts
+} else {
+    Write-Host "No specific Storage Accounts provided; querying all Storage Accounts with Databricks VNet ACLs."
+}   
 # Execute query to get all of the Storage Accounts which have serverless service endpoints configured
 $storageAccounts = Search-AzGraph -Query $kql -Subscription $subscriptionId
 # if we find nothing (which usually doesn't happen because of DBFS) we can exit early
@@ -166,8 +192,20 @@ if ($associateStorageAccount.Count -eq 0) {
     return
 } else {
     if ($interactive -eq $true) {
-        $promptMessage = "Press any key to continue.. .or Ctrl-C to abort"
+        $defaultValue = 'N'
+        $promptMessage = "Continue Migrating Storage Accounts ? [Y/N, default: $defaultValue]"
         $response = Read-Host -Prompt $promptMessage
+
+        # If the response is empty, use the default value. Otherwise, use the response.
+        $userInput = if ([string]::IsNullOrEmpty($response)) { $defaultValue } else { $response }
+
+        # Process the input (case-insensitive comparison)
+        if ($userInput -eq 'Y') {
+           Write-Host "Continuing..."
+        } else {
+            Write-Host "Aborting as per user input."
+            return
+        }   
     } else {
         Write-Host "Continuing in unattended mode..."
     }   

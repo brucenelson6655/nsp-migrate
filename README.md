@@ -14,8 +14,16 @@ This script automates the creation of a Network Security Perimeter (NSP) in Azur
 ### Remove_Serverless_ServiceEndpoints
     (optional) Boolean flag to indicate whether to remove service endpoints from Storage Accounts after associating with NSP in unattended mode.
     Default is $false.  
+### NSP_Name
+    (optional) The name of the Network Security Perimeter to be created. Default is "databricks-nsp".
+### NSP_Profile
+    (optional) The name of the Network Security Perimeter Profile to be created. Default is "adb-profile".
+### Storage_Account_Names
+    (optional) An array of Storage Account names to specifically target for association. If not provided, all Storage Accounts with Databricks VNet ACLs will be processed.
+
 
 ### EXAMPLE
+   #### To Run interactive
    ```
    ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>"
 ```
@@ -26,5 +34,8 @@ This script automates the creation of a Network Security Perimeter (NSP) in Azur
    #### Remove Service endpoints in unattended mode 
 ```
    ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Interactive False -Remove_Serverless_ServiceEndpoints True
-
+```
+   #### To Migrate specific a storage account or storeage accounts 
+   ```
+   ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Storage_Account_Names <storage account or comma seperated list of storeage accounts>
 ```
