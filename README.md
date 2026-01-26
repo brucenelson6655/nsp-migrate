@@ -1,4 +1,4 @@
-## NSP (netowrk security perimeters) for Azure Storage accounts used by serverless compute : 
+## NSP (network security perimeters) for Azure Storage accounts used by serverless compute : 
 
 We are adding a new networking feature that introduces a NSP (networking security perimeter) and employs a service tag that labels inbound serverless service endpoint traffic subnets (serverless stable endpoints). This enables greater connectivity and flexibility, allowing for expansion without hitting current resource limitations.
 
