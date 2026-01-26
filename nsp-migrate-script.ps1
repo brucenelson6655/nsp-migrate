@@ -203,12 +203,14 @@ if ($associateStorageAccount.Count -eq 0) {
         if ($userInput -eq 'Y') {
            Write-Host "Continuing..."
         } else {
-            Write-Host "Aborting as per user input."
             # write report of targeted storage accounts
             Write-Host "The following Storage Accounts were identified for migration:"
             foreach ($sa in $associateStorageAccount) {
-                Write-Host "- $($sa.name) (Resource ID: $($sa.id))"
+                $parts = $sa.id -split '/'
+                $resourceGroupName = $parts[4]
+                Write-Host "- $($sa.name) Resource Group: $resourceGroupName"
             }
+            Write-Host "Exiting as per user input."
             return
         }   
     } else {
