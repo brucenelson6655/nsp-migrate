@@ -186,9 +186,9 @@ foreach ($ssa in $storageAccounts) {
     $associateStorageAccount.Add($ssa)
 }
 
-Write-Host "Found $($associateStorageAccount.Count) Storage Accounts with Databricks VNet ACLs"
+Write-Host "Found $($associateStorageAccount.Count) Storage Accounts with Databricks VNet ACLs and/or not yet associated with NSP."
 if ($associateStorageAccount.Count -eq 0) {
-    Write-Host "No Storage Accounts matched—no NSP work required."
+    Write-Host "No Storage Accounts matched, no NSP work required."
     return
 } else {
     if ($interactive -eq $true) {
@@ -204,6 +204,11 @@ if ($associateStorageAccount.Count -eq 0) {
            Write-Host "Continuing..."
         } else {
             Write-Host "Aborting as per user input."
+            # write report of targeted storage accounts
+            Write-Host "The following Storage Accounts were identified for migration:"
+            foreach ($sa in $associateStorageAccount) {
+                Write-Host "- $($sa.name) (Resource ID: $($sa.id))"
+            }
             return
         }   
     } else {
