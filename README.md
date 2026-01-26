@@ -11,6 +11,9 @@ This script automates the creation of a Network Security Perimeter (NSP) in Azur
 ### Interactive
     (optional) Boolean flag to indicate whether to run in interactive mode (prompt for each association) or unattended mode.
     Default is $true (interactive mode).
+### Remove_Serverless_ServiceEndpoints
+    (optional) Boolean flag to indicate whether to remove service endpoints from Storage Accounts after associating with NSP in unattended mode.
+    Default is $false.  
 
 ### EXAMPLE
    ```
@@ -19,4 +22,9 @@ This script automates the creation of a Network Security Perimeter (NSP) in Azur
    #### To run unattended : 
 ```
    ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Interactive False
+```
+   #### Remove Service endpoints in unattended mode 
+```
+   ./nsp-migrate-script.ps1 -Subscription_Id "<subscription id>" -Resource_Group "<resource group name>" -Azure_Region "<azure region>" -Interactive False -Remove_Serverless_ServiceEndpoints True
+
 ```
