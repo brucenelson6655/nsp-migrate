@@ -191,6 +191,14 @@ if ($associateStorageAccount.Count -eq 0) {
     Write-Host "No Storage Accounts matched, no NSP work required."
     return
 } else {
+    # write report of targeted storage accounts
+    Write-Host "The following Storage Accounts were identified for migration:"
+    foreach ($sa in $associateStorageAccount) {
+        $parts = $sa.id -split '/'
+        $resourceGroupName = $parts[4]
+        Write-Host "- $($sa.name) Resource Group: $resourceGroupName"
+    }
+
     if ($interactive -eq $true) {
         $defaultValue = 'N'
         $promptMessage = "Continue Migrating Storage Accounts ? [Y/N, default: $defaultValue]"
@@ -203,13 +211,7 @@ if ($associateStorageAccount.Count -eq 0) {
         if ($userInput -eq 'Y') {
            Write-Host "Continuing..."
         } else {
-            # write report of targeted storage accounts
-            Write-Host "The following Storage Accounts were identified for migration:"
-            foreach ($sa in $associateStorageAccount) {
-                $parts = $sa.id -split '/'
-                $resourceGroupName = $parts[4]
-                Write-Host "- $($sa.name) Resource Group: $resourceGroupName"
-            }
+            
             Write-Host "Exiting as per user input."
             return
         }   
