@@ -10,7 +10,7 @@ The increasing demand for serverless services requires the creation of additiona
 
 This powershell script automates the creation of a Network Security Perimeter (NSP) in Azure and associates Storage Accounts with Databricks VNet ACLs to the NSP in learning mode. It logs all actions to a timestamped log file in the script's directory.
 
-- If you wanted to use an ARM template method instead, an alternate migration script using ARM template for use in aa CI/CD pipeline for example, follow this link : https://github.com/stjokerli/NPSforDatabricksServerless
+- If you wanted to use an ARM template method instead, there is an alternate migration script using ARM template for use in a CI/CD pipeline for example, follow this link : https://github.com/stjokerli/NPSforDatabricksServerless
 
 ### Parameters :
 
