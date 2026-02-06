@@ -58,11 +58,6 @@ You can modify the default NSP and profile names with the **NSP\_Name** and **NS
 
 This script can be run interactively which allows you to approve each change and step in the process, or you can run in unattended mode which will proceed to make changes without any prompting. This behavior is controlled  by the **Interactive** parameter with is defaulted to True (run interactively)
 
-#### Deleting Serverless Service Endpoints (optional) : 
-
-You have the option to delete the existing serverless service endpoints once the NSP is enabled. This action is not required and default is set to not delete after the NSP is associated. If you want to delete the serverless (stable) endpoint from your storage account once the NSP is associated, set **Remove\_Serverless\_ServiceEndpoints** to True. 
-
-
 ### EXAMPLES
    #### To Run interactive
    ```

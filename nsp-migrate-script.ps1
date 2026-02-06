@@ -8,9 +8,6 @@
 .PARAMETER Interactive
     (optional) Boolean flag to indicate whether to run in interactive mode (prompt for each association) or unattended mode.
     Default is $true (interactive mode).
-.PARAMETER Remove_Serverless_ServiceEndpoints
-    (optional) Boolean flag to indicate whether to remove service endpoints from Storage Accounts after associating with NSP in unattended mode.
-    Default is $false.  
 .PARAMETER NSP_Name
     (optional) The name of the Network Security Perimeter to be created. Default is "databricks-nsp".
 .PARAMETER NSP_Profile
@@ -37,7 +34,7 @@
    created by Bruce Nelson Databricks
 #>
 
-param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $NSP_Name="databricks-nsp", $NSP_Profile="adb-profile", $Storage_Account_Names, $Interactive=$true, $Remove_Serverless_ServiceEndpoints=$false)
+param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $NSP_Name="databricks-nsp", $NSP_Profile="adb-profile", $Storage_Account_Names, $Interactive=$true)
 
 # Set variables
 $subscriptionId = $Subscription_Id
@@ -59,6 +56,7 @@ $interactive = $Interactive
 function Remove-Serverless-ServiceEndpoints {
 param( [Parameter(Mandatory)]$storageAccountName)
 # Get the subnet object to retrieve its resource ID
+return
 $sekql = @" 
 resources
 | where type == "microsoft.storage/storageaccounts"
@@ -287,22 +285,22 @@ foreach ($sa in $associateStorageAccount) {
            $SEpromptMessage = "Remove Serverless Service Endpoints from $($sa.name) with NSP $($nspName) ? [Y/N, default: $SEdefaultValue]"
            $SEresponse = Read-Host -Prompt $SEpromptMessage
 
-           # If the response is empty, use the default value. Otherwise, use the response.
-           $SEuserInput = if ([string]::IsNullOrEmpty($SEresponse)) { $SEdefaultValue } else { $SEresponse }
-           if ($SEuserInput -eq 'Y') {
-               Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
-           } else {
-               Write-Host "Skipping service endpoint removal for $($sa.name) as per user input."
-           }
+        # If the response is empty, use the default value. Otherwise, use the response.
+        #   $SEuserInput = if ([string]::IsNullOrEmpty($SEresponse)) { $SEdefaultValue } else { $SEresponse }
+        #    if ($SEuserInput -eq 'Y') {
+        #        Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
+        #    } else {
+        #        Write-Host "Skipping service endpoint removal for $($sa.name) as per user input."
+        #    }
         } else {
             Write-Host "Skipping $($sa.name) as per user input."
         }
     } else {
         Write-Host "Associating $($sa.name) with NSP $($nspName) in transition mode..."  
         New-AzNetworkSecurityPerimeterAssociation -Name "$($sa.name)-Assoc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup -ProfileId $nspProfile.Id -PrivateLinkResourceId $sa.id -AccessMode 'Learning'  
-        if ($Remove_Serverless_ServiceEndpoints -eq $true) {
-            Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
-        }
+        # if ($Remove_Serverless_ServiceEndpoints -eq $true) {
+        #     Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
+        # }
     }
 }
 
