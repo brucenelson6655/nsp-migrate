@@ -4,7 +4,8 @@ We are adding a new networking feature that introduces a NSP (networking securit
 
 ### Motivation:
 
-The increasing demand for serverless services requires the creation of additional compute subscriptions to support more Virtual Machines (VMs). A significant challenge arises because new subnets within these subscriptions cannot be automatically allowlisted by existing customers (due to existing product constraints). This prevents horizontal scale-out and causes sharp edges to product experience.
+The increasing demand for serverless services requires the creation of additional compute subscriptions to support more Virtual Machines (VMs). A significant challenge arises because new subnets within these subscriptions cannot be automatically allowlisted by existing customers (due to existing product constraints). This prevents horizontal scale-out and causes sharp edges to product experience. 
+
 
 ### Migration Script
 
