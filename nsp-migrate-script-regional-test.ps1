@@ -58,7 +58,7 @@ $interactive = $Interactive
 # Define function to convert location name to match service tag format
 function Convert-LocationToServiceTagFormat {
     param( [Parameter(Mandatory)]$location)
-    $tagLocation = "default"
+    $tagLocation = "global"
     $allLocations = @("AustraliaCentral","AustraliaCentral2","AustraliaEast","AustraliaSoutheast","AustriaEast","BelgiumCentral","BrazilSouth","BrazilSoutheast","CanadaCentral","CanadaEast","CentralIndia","CentralUS","CentralUSEUAP","ChileCentral","DenmarkEast","EastAsia","EastUS","EastUS2","EastUS2EUAP","EastUS3","FranceCentral","FranceSouth","GermanyNorth","GermanyWestCentral","IndiaSouthCentral","IndonesiaCentral","IsraelCentral","IsraelNorthwest","ItalyNorth","JapanEast","JapanWest","JioIndiaCentral","JioIndiaWest","KoreaCentral","KoreaSouth","MalaysiaSouth","MalaysiaWest","MexicoCentral","NewZealandNorth","NorthCentralUS","NortheastUS5","NorthEurope","NorwayEast","NorwayWest","PolandCentral","QatarCentral","SaudiArabiaEast","SouthAfricaNorth","SouthAfricaWest","SouthCentralUS","SouthCentralUS2","SoutheastAsia","SoutheastAsia3","SoutheastUS","SoutheastUS3","SoutheastUS5","SouthIndia","SouthwestUS","SpainCentral","SwedenCentral","SwedenSouth","SwitzerlandNorth","SwitzerlandWest","TaiwanNorth","TaiwanNorthwest","UAECentral","UAENorth","UKSouth","UKWest","WestCentralUS","WestCentralUSFRE","WestEurope","WestIndia","WestUS", "WestUS2", "WestUS3")
     foreach ($ccloc in $allLocations) { 
         if ($location -match $ccloc) {
@@ -264,7 +264,7 @@ if (-not (Get-AzNetworkSecurityPerimeter -Name $nspName -ResourceGroupName $reso
 } 
 # verify or Create Profile plus a default profile for rougue location names or future feature of user choice. 
 #create default profile with default service tag to ensure we have a profile to associate with if we encounter any location names that don't match the service tag format, this way we can avoid any issues with associating storage accounts that have location names that don't match the service tag format which could cause connectivity issues for the storage accounts once associated with the NSP
-$loc = "default"
+$loc = "global"
 if (-not (Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue)) {
     Write-Host "Creating Network Security Perimeter Profile '$profileName.$loc' for location '$loc'..."
     $defaultNspProfile = New-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup
