@@ -287,7 +287,7 @@ foreach ($sa in $associateStorageAccount) {
            $SEpromptMessage = "Remove Serverless Service Endpoints from $($sa.name) with NSP $($nspName) ? [Y/N, default: $SEdefaultValue]"
            $SEresponse = Read-Host -Prompt $SEpromptMessage
 
-        If the response is empty, use the default value. Otherwise, use the response.
+        # If the response is empty, use the default value. Otherwise, use the response.
           $SEuserInput = if ([string]::IsNullOrEmpty($SEresponse)) { $SEdefaultValue } else { $SEresponse }
            if ($SEuserInput -eq 'Y') {
                Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
