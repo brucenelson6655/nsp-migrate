@@ -15,7 +15,7 @@
 .PARAMETER Use_Global_Profile
     (optional) Boolean flag to indicate whether to use a single global profile for all associations instead of regional profiles. If set to $true, the script will use the default global profile with service tag "AzureDatabricksServerless" for all associations regardless of location. Default is $false (use regional profiles based on storage account location).    
     This is useful in scenarios where you want to simplify the profile management and are okay with using the global service tag for all locations.
-    Currently only in-region access is possible using NSP associations, but in the future Global serive endpoint access may be possible which would make this option more relevant.
+    Currently only in-region access is possible using NSP associations, but in the future Global service endpoint access may be possible which would make this option more relevant.
 .PARAMETER Storage_Account_Names
     (optional) An array of Storage Account names to specifically target for association. If not provided, all Storage Accounts with Databricks VNet ACLs will be processed.
 .PARAMETER Remove_Serverless_ServiceEndpoints
