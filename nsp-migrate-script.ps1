@@ -268,9 +268,9 @@ if (-not (Get-AzNetworkSecurityPerimeter -Name $nspName -ResourceGroupName $reso
 # verify or Create Profile plus a default profile for rougue location names or future feature of user choice. 
 #create default profile with default service tag to ensure we have a profile to associate with if we encounter any location names that don't match the service tag format, this way we can avoid any issues with associating storage accounts that have location names that don't match the service tag format which could cause connectivity issues for the storage accounts once associated with the NSP
 $loc = "global"
-if (-not (Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue)) {
-    Write-Host "Creating Network Security Perimeter Profile '$profileName.$loc' for location '$loc'..."
-    $defaultNspProfile = New-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup
+if (-not (Get-AzNetworkSecurityPerimeterProfile -Name "$profileName-$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue)) {
+    Write-Host "Creating Network Security Perimeter Profile '$profileName-$loc' for location '$loc'..."
+    $defaultNspProfile = New-AzNetworkSecurityPerimeterProfile -Name "$profileName-$loc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup
         # Create Rule to approve AzureDatabricksServerless
     New-AzNetworkSecurityPerimeterAccessRule -Name "Allow-AzureDatabricks-Serverless" `
         -ProfileName $defaultNspProfile.Name `
@@ -279,16 +279,16 @@ if (-not (Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -Resou
         -Direction Inbound `
         -ServiceTag "AzureDatabricksServerless"
 } else {
-        Write-Host "Network Security Perimeter Profile '$profileName.$loc' already exists for location '$loc'."
+        Write-Host "Network Security Perimeter Profile '$profileName-$loc' already exists for location '$loc'."
 }
 # create regional profiles based on the unique list of locations we have from the storage accounts we need to associate, this way we ensure we have the correct service tags for each location which is required for the NSP profiles, and avoid any issues with incorrect service tags which could cause connectivity issues for the storage accounts once associated with the NSP
 foreach ($uniqiueLoc  in $uniqueLocations) {
     $loc = Convert-LocationToServiceTagFormat -location $uniqiueLoc
     Write-Host "Processing NSP Profile for location '$loc'..."
 
-    if (-not (Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue)) {
-        Write-Host "Creating Network Security Perimeter Profile '$profileName.$loc' for location '$loc'..."
-        $nspProfile = New-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup
+    if (-not (Get-AzNetworkSecurityPerimeterProfile -Name "$profileName-$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue)) {
+        Write-Host "Creating Network Security Perimeter Profile '$profileName-$loc' for location '$loc'..."
+        $nspProfile = New-AzNetworkSecurityPerimeterProfile -Name "$profileName-$loc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup
         # Create Rule to approve AzureDatabricksServerless
         New-AzNetworkSecurityPerimeterAccessRule -Name "Allow-AzureDatabricks-Serverless-$loc" `
             -ProfileName $nspProfile.Name `
@@ -297,7 +297,7 @@ foreach ($uniqiueLoc  in $uniqueLocations) {
             -Direction Inbound `
             -ServiceTag "AzureDatabricksServerless.$loc"
     } else {
-        Write-Host "Network Security Perimeter Profile '$profileName.$loc' already exists for location '$loc'."
+        Write-Host "Network Security Perimeter Profile '$profileName-$loc' already exists for location '$loc'."
     } 
 }
 # Associate Storage Accounts with NSP
@@ -319,14 +319,14 @@ foreach ($sa in $associateStorageAccount) {
     Write-Host "Finding $($sa.name) SA resource ID $($sa.id) SA location $($sa.location)"
     # convert location to match service tag format for profile lookup, this is needed because some location names don't match the service tag format which would cause issues with profile lookup and association if we don't convert the location name to match the service tag format, this way we can ensure we have the correct profile for each storage account based on its location which is required for the NSP association and connectivity
     $loc = Convert-LocationToServiceTagFormat -location $sa.location
-    $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
+    $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName-$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
     if ($interactive -eq $true) {
         # $userInput = GetUserInput -promptMessage "Associate $($sa.name) with NSP $($nspName) using Profile $($nspProfile.Name) ? [Y/N, default: Y]" -defaultValue 'Y'
         if ($Use_Global_Profile -eq $true) {
             $useRegionalProfileInput = GetUserInput -promptMessage "For storage account $($sa.name), use regional profile for location '$loc' which has service tag 'AzureDatabricksServerless.$loc' or default global profile with service tag 'AzureDatabricksServerless' ? [R]egional / [G]lobal, default: R]" -defaultValue 'R'
             if ($useRegionalProfileInput -eq 'G') {
                 $loc = "global"
-                $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
+                $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName-$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
                 Write-Host "User has chosen to use global profile for association."
             } else {
                 Write-Host "User has chosen to use regional profile for association."
