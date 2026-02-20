@@ -300,6 +300,9 @@ foreach ($uniqiueLoc  in $uniqueLocations) {
         Write-Host "Network Security Perimeter Profile '$profileName-$loc' already exists for location '$loc'."
     } 
 }
+Write-Host "NSP and Profiles are ready, starting association of Storage Accounts with NSP..."
+Write-Host -ForegroundColor Red "`n`nUsing NSP '$nspName' in resource group '$resourceGroup' for associations.`n"
+
 # Associate Storage Accounts with NSP
 
 foreach ($sa in $associateStorageAccount) {  
@@ -316,7 +319,7 @@ foreach ($sa in $associateStorageAccount) {
         Write-Host "Skipping $($sa.name) : already associated with NSP."
         continue
     }
-    Write-Host "Finding $($sa.name) SA resource ID $($sa.id) SA location $($sa.location)"
+    Write-Host "Finding $($accountName) SA resource ID $($sa.id) SA location $($sa.location)"
     # convert location to match service tag format for profile lookup, this is needed because some location names don't match the service tag format which would cause issues with profile lookup and association if we don't convert the location name to match the service tag format, this way we can ensure we have the correct profile for each storage account based on its location which is required for the NSP association and connectivity
     $loc = Convert-LocationToServiceTagFormat -location $sa.location
     $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName-$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
@@ -334,8 +337,8 @@ foreach ($sa in $associateStorageAccount) {
         }
         $userInput = GetUserInput -promptMessage "Associate $($sa.name) with NSP $($nspName) using Profile $($nspProfile.Name) ? [Y/N, default: Y]" -defaultValue 'Y'
         if ($userInput -eq 'Y') {
-           Write-Host "Associating $($sa.name) with NSP $($nspName) using Profile $($nspProfile.Name) in transition mode..."  
-           New-AzNetworkSecurityPerimeterAssociation -Name "$($sa.name)-Assoc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup -ProfileId $nspProfile.Id -PrivateLinkResourceId $sa.id -AccessMode 'Learning' 
+           Write-Host "Associating $($accountName) with NSP $($nspName) using Profile $($nspProfile.Name) in transition mode..."  
+           New-AzNetworkSecurityPerimeterAssociation -Name "$($accountName)-Assoc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup -ProfileId $nspProfile.Id -PrivateLinkResourceId $sa.id -AccessMode 'Learning' 
            $SEuserInput = GetUserInput -promptMessage "Remove Serverless Service Endpoints from $($sa.name) with NSP $($nspName) ? [Y/N, default: N]" -defaultValue 'N'
            if ($SEuserInput -eq 'Y') {
                Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
