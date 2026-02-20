@@ -45,6 +45,12 @@ This powershell script automates the creation of a Network Security Perimeter (N
 
 * (optional) The name of the Network Security Perimeter Profile to be created. The default is "adb-profile".
 
+#### Use\_Global\_Profile:
+* (optional) Boolean flag to indicate whether to use a single global profile for all associations instead of regional profiles. If set to $true, the script will use the default global profile with service tag "AzureDatabricksServerless" for all associations regardless of location. Default is $false (use regional profiles based on storage account location).    
+* This is useful in scenarios where you want to simplify the profile management and are okay with using the global service tag for all locations.
+* Currently only in-region access is possible using NSP associations, but in the future Global serive endpoint access may be possible which would make this option more relevant.
+
+
 #### Storage\_Account\_Names:
 
 * (optional) An array of Storage Account names to specifically target for association. If not provided, all Storage Accounts with Databricks VNet ACLs will be processed.

@@ -12,6 +12,10 @@
     (optional) The name of the Network Security Perimeter to be created. Default is "databricks-nsp".
 .PARAMETER NSP_Profile
     (optional) The name of the Network Security Perimeter Profile to be created. Default is "adb-profile".
+.PARAMETER Use_Global_Profile
+    (optional) Boolean flag to indicate whether to use a single global profile for all associations instead of regional profiles. If set to $true, the script will use the default global profile with service tag "AzureDatabricksServerless" for all associations regardless of location. Default is $false (use regional profiles based on storage account location).    
+    This is useful in scenarios where you want to simplify the profile management and are okay with using the global service tag for all locations.
+    Currently only in-region access is possible using NSP associations, but in the future Global serive endpoint access may be possible which would make this option more relevant.
 .PARAMETER Storage_Account_Names
     (optional) An array of Storage Account names to specifically target for association. If not provided, all Storage Accounts with Databricks VNet ACLs will be processed.
 .PARAMETER Remove_Serverless_ServiceEndpoints
@@ -37,7 +41,7 @@
    created by Bruce Nelson Databricks
 #>
 
-param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $NSP_Name="databricks-nsp", $NSP_Profile="adb-profile", $Storage_Account_Names, $Interactive=$true, $Remove_Serverless_ServiceEndpoints=$false)
+param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $NSP_Name="databricks-nsp", $NSP_Profile="adb-profile", $Storage_Account_Names, $Interactive=$true, $Remove_Serverless_ServiceEndpoints=$false, $Use_Global_Profile=$false)
 
 # Set variables
 $subscriptionId = $Subscription_Id
@@ -67,7 +71,13 @@ function Convert-LocationToServiceTagFormat {
     }
     return $tagLocation
 }
-
+# Define function to get user input with default value
+function GetUserInput {
+    param( [Parameter(Mandatory)]$promptMessage, [string]$defaultValue = 'Y')
+    $response = Read-Host -Prompt $promptMessage
+    $userInput = if ([string]::IsNullOrEmpty($response)) { $defaultValue } else { $response }
+    return $userInput
+}
 # Define function to remove service endpoints
 function Remove-Serverless-ServiceEndpoints {
 param( [Parameter(Mandatory)]$storageAccountName)
@@ -223,14 +233,7 @@ if ($associateStorageAccount.Count -eq 0) {
     }
 
     if ($interactive -eq $true) {
-        $defaultValue = 'N'
-        $promptMessage = "Continue Migrating Storage Accounts ? [Y/N, default: $defaultValue]"
-        $response = Read-Host -Prompt $promptMessage
-
-        # If the response is empty, use the default value. Otherwise, use the response.
-        $userInput = if ([string]::IsNullOrEmpty($response)) { $defaultValue } else { $response }
-
-        # Process the input (case-insensitive comparison)
+        $userInput = GetUserInput -promptMessage "Continue Migrating Storage Accounts ? [Y/N, default: Y]" -defaultValue 'Y'
         if ($userInput -eq 'Y') {
            Write-Host "Continuing..."
         } else {
@@ -280,11 +283,6 @@ if (-not (Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -Resou
 }
 # create regional profiles based on the unique list of locations we have from the storage accounts we need to associate, this way we ensure we have the correct service tags for each location which is required for the NSP profiles, and avoid any issues with incorrect service tags which could cause connectivity issues for the storage accounts once associated with the NSP
 foreach ($uniqiueLoc  in $uniqueLocations) {
-    # foreach ($ccloc in $allLocations) {
-    #     if ($loc -match $ccloc) {
-    #         $loc = $ccloc
-    #     }
-    # }
     $loc = Convert-LocationToServiceTagFormat -location $uniqiueLoc
     Write-Host "Processing NSP Profile for location '$loc'..."
 
@@ -300,8 +298,6 @@ foreach ($uniqiueLoc  in $uniqueLocations) {
             -ServiceTag "AzureDatabricksServerless.$loc"
     } else {
         Write-Host "Network Security Perimeter Profile '$profileName.$loc' already exists for location '$loc'."
-        # $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
-        # continue
     } 
 }
 # Associate Storage Accounts with NSP
@@ -325,23 +321,22 @@ foreach ($sa in $associateStorageAccount) {
     $loc = Convert-LocationToServiceTagFormat -location $sa.location
     $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
     if ($interactive -eq $true) {
-        $defaultValue = 'Y'
-        $promptMessage = "Associate $($sa.name) with NSP $($nspName) using Profile $($nspProfile.Name) ? [Y/N, default: $defaultValue]"
-        $response = Read-Host -Prompt $promptMessage
-
-        # If the response is empty, use the default value. Otherwise, use the response.
-        $userInput = if ([string]::IsNullOrEmpty($response)) { $defaultValue } else { $response }
-
-        # Process the input (case-insensitive comparison)
+        # $userInput = GetUserInput -promptMessage "Associate $($sa.name) with NSP $($nspName) using Profile $($nspProfile.Name) ? [Y/N, default: Y]" -defaultValue 'Y'
+        if ($Use_Global_Profile -eq $true) {
+            $useRegionalProfileInput = GetUserInput -promptMessage "For storage account $($sa.name), use regional profile for location '$loc' which has service tag 'AzureDatabricksServerless.$loc' or default global profile with service tag 'AzureDatabricksServerless' ? [R]egional / [G]lobal, default: R]" -defaultValue 'R'
+            if ($useRegionalProfileInput -eq 'G') {
+                $loc = "global"
+                $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName.$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
+                Write-Host "User has chosen to use global profile for association."
+            } else {
+                Write-Host "User has chosen to use regional profile for association."
+            }
+        }
+        $userInput = GetUserInput -promptMessage "Associate $($sa.name) with NSP $($nspName) using Profile $($nspProfile.Name) ? [Y/N, default: Y]" -defaultValue 'Y'
         if ($userInput -eq 'Y') {
            Write-Host "Associating $($sa.name) with NSP $($nspName) using Profile $($nspProfile.Name) in transition mode..."  
            New-AzNetworkSecurityPerimeterAssociation -Name "$($sa.name)-Assoc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup -ProfileId $nspProfile.Id -PrivateLinkResourceId $sa.id -AccessMode 'Learning' 
-           $SEdefaultValue = 'N'
-           $SEpromptMessage = "Remove Serverless Service Endpoints from $($sa.name) with NSP $($nspName) ? [Y/N, default: $SEdefaultValue]"
-           $SEresponse = Read-Host -Prompt $SEpromptMessage
-
-        # If the response is empty, use the default value. Otherwise, use the response.
-          $SEuserInput = if ([string]::IsNullOrEmpty($SEresponse)) { $SEdefaultValue } else { $SEresponse }
+           $SEuserInput = GetUserInput -promptMessage "Remove Serverless Service Endpoints from $($sa.name) with NSP $($nspName) ? [Y/N, default: N]" -defaultValue 'N'
            if ($SEuserInput -eq 'Y') {
                Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
            } else {
