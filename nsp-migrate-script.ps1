@@ -21,6 +21,8 @@
 .PARAMETER Remove_Serverless_ServiceEndpoints
     (optional) Boolean flag to indicate whether to remove service endpoints from Storage Accounts after associating with NSP in unattended mode.
     Default is $false.  
+.PARAMETER Dry_Run_Mode
+    (optional) Boolean flag to indicate whether to run the script in dry run mode, which will go through all the motions and log all the actions that would be taken, but will not actually perform any changes to the NSP associations or service endpoint removals. This is useful for testing and validation before running the script for real.
 .DESCRIPTION
     This script automates the creation of a Network Security Perimeter (NSP) in Azure
     and associates Storage Accounts with Databricks VNet ACLs to the NSP in learning mode.
@@ -41,7 +43,7 @@
    created by Bruce Nelson Databricks
 #>
 
-param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $NSP_Name="databricks-nsp", $NSP_Profile="adb-profile", $Storage_Account_Names, $Interactive=$true, $Remove_Serverless_ServiceEndpoints=$false, $Use_Global_Profile=$false)
+param( [Parameter(Mandatory)]$Subscription_Id, [Parameter(Mandatory)]$Resource_Group, [Parameter(Mandatory)]$Azure_Region, $NSP_Name="databricks-nsp", $NSP_Profile="adb-profile", $Storage_Account_Names, $Interactive=$true, $Dry_Run_Mode=$false, $Remove_Serverless_ServiceEndpoints=$false, $Use_Global_Profile=$false)
 
 # Set variables
 $subscriptionId = $Subscription_Id
@@ -190,6 +192,7 @@ $storageAccounts = Search-AzGraph -Query $kql -Subscription $subscriptionId
 
 # Create an empty list of strings
 $associateStorageAccount = [System.Collections.Generic.List[object]]::New()
+$migrateStorageAccount = [System.Collections.Generic.List[object]]::New()
 $associateStorageLocations = [System.Collections.Generic.List[string]]::New()
 
 foreach ($ssa in $storageAccounts) {  
@@ -247,12 +250,13 @@ if ($associateStorageAccount.Count -eq 0) {
 }
 # lets create or verify NSP and profiles before we start associating storage accounts, this way we can ensure everything is in place before we start making changes to the storage accounts, and also avoid any issues with creating profiles in the middle of the association process which could cause delays if we have a lot of storage accounts to process
 # Create Resource Group - if it doesn't already exist, if it does exist we will just use the existing resource group for the NSP
+if ($Dry_Run_Mode -eq $true) {
+    Write-Host "Dry run mode is enabled, skipping actual creation of resource group, NSP, and profiles. This is for testing and validation purposes only."
+} else {    
 if (-not (Get-AzResourceGroup -Name $resourceGroup -ErrorAction SilentlyContinue)) {
     Write-Host "Resource group '$resourceGroup' doesnot exist. Creating..."
-    
     # Create the resource group
     New-AzResourceGroup -Name $resourceGroup -Location $location
-    
     Write-Host "Resource group '$resourceGroup' created successfully in '$location'."
 } else {
     Write-Host "Resource group '$resourceGroup' already exists."
@@ -301,6 +305,7 @@ foreach ($uniqiueLoc  in $uniqueLocations) {
     } 
 }
 Write-Host "NSP and Profiles are ready, starting association of Storage Accounts with NSP..."
+}
 Write-Host -ForegroundColor Red "`n`nUsing NSP '$nspName' in resource group '$resourceGroup' for associations.`n"
 
 # Associate Storage Accounts with NSP
@@ -319,10 +324,19 @@ foreach ($sa in $associateStorageAccount) {
         Write-Host "Skipping $($sa.name) : already associated with NSP."
         continue
     }
-    Write-Host "Finding $($accountName) SA resource ID $($sa.id) SA location $($sa.location)"
+    Write-Host -ForegroundColor DarkYellow "Finding $($accountName) SA resource ID $($sa.id) SA location $($sa.location)"
     # convert location to match service tag format for profile lookup, this is needed because some location names don't match the service tag format which would cause issues with profile lookup and association if we don't convert the location name to match the service tag format, this way we can ensure we have the correct profile for each storage account based on its location which is required for the NSP association and connectivity
     $loc = Convert-LocationToServiceTagFormat -location $sa.location
     $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName-$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
+    $sa | Add-Member -MemberType NoteProperty -Name "nspName" -Value $nspName -Force
+    $sa | Add-Member -MemberType NoteProperty -Name "nspLocation" -Value $sa.location -Force
+    $sa | Add-Member -MemberType NoteProperty -Name "nspResourceGroup" -Value $resourceGroup -Force
+    $sa | Add-Member -MemberType NoteProperty -Name "nspProfile" -Value $nspProfile.Name -Force
+    $sa | Add-Member -MemberType NoteProperty -Name "nspServiceTag" -Value "AzureDatabricksServerless.$loc" -Force  
+    $sa | Add-Member -MemberType NoteProperty -Name "nspProfileId" -Value $nspProfile.Id -Force
+    $sa | Add-Member -MemberType NoteProperty -Name "stLocation" -Value $loc -Force
+    $sa | Add-Member -MemberType NoteProperty -Name "resourceGroup" -Value $resourceGroupName -Force
+    $sa | Add-Member -MemberType NoteProperty -Name "deleteServiceEndpoints" -Value $Remove_Serverless_ServiceEndpoints -Force
     if ($interactive -eq $true) {
         # $userInput = GetUserInput -promptMessage "Associate $($sa.name) with NSP $($nspName) using Profile $($nspProfile.Name) ? [Y/N, default: Y]" -defaultValue 'Y'
         if ($Use_Global_Profile -eq $true) {
@@ -330,6 +344,10 @@ foreach ($sa in $associateStorageAccount) {
             if ($useRegionalProfileInput -eq 'G') {
                 $loc = "global"
                 $nspProfile = Get-AzNetworkSecurityPerimeterProfile -Name "$profileName-$loc" -ResourceGroupName $resourceGroup -SecurityPerimeterName $nspName -ErrorAction SilentlyContinue
+                $sa.nspProfile = $nspProfile.Name
+                $sa.nspServiceTag = "AzureDatabricksServerless"
+                $sa.nspProfileId = $nspProfile.Id
+                $sa.stLocation = $loc
                 Write-Host "User has chosen to use global profile for association."
             } else {
                 Write-Host "User has chosen to use regional profile for association."
@@ -338,24 +356,52 @@ foreach ($sa in $associateStorageAccount) {
         $userInput = GetUserInput -promptMessage "Associate $($sa.name) with NSP $($nspName) using Profile $($nspProfile.Name) ? [Y/N, default: Y]" -defaultValue 'Y'
         if ($userInput -eq 'Y') {
            Write-Host "Associating $($accountName) with NSP $($nspName) using Profile $($nspProfile.Name) in transition mode..."  
-           New-AzNetworkSecurityPerimeterAssociation -Name "$($accountName)-Assoc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup -ProfileId $nspProfile.Id -PrivateLinkResourceId $sa.id -AccessMode 'Learning' 
+           Write-Host -ForegroundColor Green "Association details for $($sa.name): NSP: $($sa.nspName) Profile: $($sa.nspProfile) Location: $($sa.stLocation) Resource Group: $($sa.resourceGroup)"
+           # New-AzNetworkSecurityPerimeterAssociation -Name "$($accountName)-Assoc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup -ProfileId $nspProfile.Id -PrivateLinkResourceId $sa.id -AccessMode 'Learning' 
            $SEuserInput = GetUserInput -promptMessage "Remove Serverless Service Endpoints from $($sa.name) with NSP $($nspName) ? [Y/N, default: N]" -defaultValue 'N'
            if ($SEuserInput -eq 'Y') {
-               Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
+               # Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
+               $sa.deleteServiceEndpoints = $true
+               Write-Host "Service endpoints will be removed for $($sa.name) as per user input."
            } else {
+               $sa.deleteServiceEndpoints = $false
                Write-Host "Skipping service endpoint removal for $($sa.name) as per user input."
            }
+           ## Load the $sa object into a new list that we will process after the loop to do the actual associations and service endpoint removals, this way we can avoid any issues with modifying the storage account object while we are still looping through it which could cause issues with the loop and also allows us to batch the associations and service endpoint removals after we have all the user input collected for each storage account, this way we can also provide a summary of all the associations and service endpoint removals that will be performed before we actually perform them, giving the user one last chance to review and confirm before we make any changes to the storage accounts
+           $migrateStorageAccount.Add($sa)
         } else {
             Write-Host "Skipping $($sa.name) as per user input."
         }
     } else {
         Write-Host "Associating $($sa.name) with NSP $($nspName) in transition mode..."  
-        New-AzNetworkSecurityPerimeterAssociation -Name "$($sa.name)-Assoc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup -ProfileId $nspProfile.Id -PrivateLinkResourceId $sa.id -AccessMode 'Learning'  
-        if ($Remove_Serverless_ServiceEndpoints -eq $true) {
-            Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
-        }
+        $migrateStorageAccount.Add($sa)
+
+        ## Load the $sa object into a new list that we will process after the loop to do the actual associations and service endpoint removals, this way we can avoid any issues with modifying the storage account object while we are still looping through it which could cause issues with the loop and also allows us to batch the associations and service endpoint removals after we have all the user input collected for each storage account, this way we can also provide a summary of all the associations and service endpoint removals that will be performed before we actually perform them, giving the user one last chance to review and confirm before we make any changes to the storage accounts
+        # New-AzNetworkSecurityPerimeterAssociation -Name "$($sa.name)-Assoc" -SecurityPerimeterName $nspName -ResourceGroupName $resourceGroup -ProfileId $nspProfile.Id -PrivateLinkResourceId $sa.id -AccessMode 'Learning'  
+        # if ($Remove_Serverless_ServiceEndpoints -eq $true) {
+        #     Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
+        # }
     }
 }
+## we will process the associations and service endpoint removals after we have collected all the user input for each storage account, this way we can provide a summary of all the associations and service endpoint removals that will be performed before we actually perform them, giving the user one last chance to review and confirm before we make any changes to the storage accounts
+Write-Host "`nSummary of Associations and Service Endpoint Removals to be performed:"
+foreach ($sa in $migrateStorageAccount) {
+    Write-Host -ForegroundColor Green "Storage Account: $($sa.name) NSP: $($sa.nspName) Profile: $($sa.nspProfile) Location: $($sa.stLocation) Resource Group: $($sa.resourceGroup) Remove Service Endpoints: $($sa.deleteServiceEndpoints)"
+    if ($Dry_Run_Mode -eq $true) {
+        Write-Host "Dry run mode is enabled, skipping actual association and service endpoint removal for $($sa.name)."
+    } else {
+        # Perform the actual association
+        New-AzNetworkSecurityPerimeterAssociation -Name "$($sa.name)-Assoc" -SecurityPerimeterName $sa.nspName -ResourceGroupName $sa.nspResourceGroup -ProfileId $sa.nspProfileId -PrivateLinkResourceId $sa.id -AccessMode 'Learning'  
+        Write-Host "Associated $($sa.name) with NSP $($sa.nspName) using Profile $($sa.nspProfile) in transition mode."
+        if ($sa.deleteServiceEndpoints -eq $true) {
+            Remove-Serverless-ServiceEndpoints -storageAccountName $sa.name
+            Write-Host "Removed service endpoints for $($sa.name) as per user input."
+        } else {
+            Write-Host "Skipping service endpoint removal for $($sa.name) as per user input."
+        }
+    }   
+}
+    
 
 
 #stop logging

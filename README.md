@@ -55,6 +55,9 @@ This powershell script automates the creation of a Network Security Perimeter (N
 
 * (optional) An array of Storage Account names to specifically target for association. If not provided, all Storage Accounts with Databricks VNet ACLs will be processed.
 
+#### Dry\_Run\_mode
+* (optional) Boolean flag to indicate whether to run the script in dry run mode, which will go through all the motions and log all the actions that would be taken, but will not actually perform any changes to the NSP associations or service endpoint removals. This is useful for testing and validation before running the script for real.
+
 ### Running this script : 
 
 You can run this script in the Azure portal cloud shell (powershell). When run without parameters it will prompt for the Subscription ID, resource group and region to use / create the NSP and profile for that specific subscription. 
