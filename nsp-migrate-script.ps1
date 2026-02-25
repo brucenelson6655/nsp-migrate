@@ -386,7 +386,7 @@ foreach ($sa in $associateStorageAccount) {
 ## we will process the associations and service endpoint removals after we have collected all the user input for each storage account, this way we can provide a summary of all the associations and service endpoint removals that will be performed before we actually perform them, giving the user one last chance to review and confirm before we make any changes to the storage accounts
 Write-Host "`nSummary of Associations and Service Endpoint Removals to be performed:"
 foreach ($sa in $migrateStorageAccount) {
-    Write-Host -ForegroundColor Green "Storage Account: $($sa.name) NSP: $($sa.nspName) Profile: $($sa.nspProfile) Location: $($sa.stLocation) Resource Group: $($sa.resourceGroup) Remove Service Endpoints: $($sa.deleteServiceEndpoints)"
+    Write-Host -ForegroundColor Green "`nStorage Account: $($sa.name) `nNSP: $($sa.nspName) Profile: $($sa.nspProfile) Location: $($sa.stLocation) Resource Group: $($sa.resourceGroup) `nRemove Service Endpoints: $($sa.deleteServiceEndpoints)"
     if ($Dry_Run_Mode -eq $true) {
         Write-Host "Dry run mode is enabled, skipping actual association and service endpoint removal for $($sa.name)."
     } else {
