@@ -267,7 +267,8 @@ if (-not (Get-AzNetworkSecurityPerimeter -Name $nspName -ResourceGroupName $reso
     New-AzNetworkSecurityPerimeter -Name $nspName -ResourceGroupName $resourceGroup -Location $location
     Write-Host "Created Network Security Perimeter '$nspName' in resource group '$resourceGroup'." 
 } else {
-   Write-Host "Network Security Perimeter '$nspName' already exists in resource group '$resourceGroup'."Group -SecurityPerimeterName $nspName
+   Write-Host "Network Security Perimeter '$nspName' already exists in resource group '$resourceGroup'."
+   #Group -SecurityPerimeterName $nspName
 } 
 # verify or Create Profile plus a default profile for rougue location names or future feature of user choice. 
 #create default profile with default service tag to ensure we have a profile to associate with if we encounter any location names that don't match the service tag format, this way we can avoid any issues with associating storage accounts that have location names that don't match the service tag format which could cause connectivity issues for the storage accounts once associated with the NSP
