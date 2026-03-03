@@ -1,4 +1,4 @@
-# NAT NSP Deploy (nat-nsp-deploy.ps1)
+# NAT NSP Deploy (nip-rule-nsp-deploy.ps1)
 
 This script updates an exiating Network Security Perimeter (NSP) configuration across one or more Azure regions using the project's NSP tooling.
 
