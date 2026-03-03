@@ -108,7 +108,7 @@ getPrefixes("aws", "us-west-2", "inbound").then(prefixes => {
 $json = Invoke-RestMethod -Uri "https://www.databricks.com/networking/v1/ip-ranges.json"
 
 # Function to filter prefixes
-def Get-Prefixes {
+function Get-Prefixes {
     param(
         [string]$Platform,
         [string]$Region,
@@ -123,7 +123,7 @@ def Get-Prefixes {
 }
 
 # Example: AWS us-west-2 inbound IPv4 prefixes
-$results = Get-Prefixes -Platform 'aws' -Region 'us-west-2' -Type 'inbound'
+$results = Get-Prefixes -Platform 'aws' -Region 'us-west-2' -Type 'outbound'
 $ipv4 = $results | Select-Object -ExpandProperty ipv4Prefixes
 $ipv4
 ```

@@ -1,6 +1,6 @@
 # NAT NSP Deploy (nat-nsp-deploy.ps1)
 
-This script updates an exiating Network Security Perimeter (NSP) configuration across one or more Azure regions using the project's NSP tooling.
+This script updates an exisint Network Security Perimeter (NSP) configuration across one or more Azure regions using the project's NSP tooling.
 
 **What it does:**
 - Deploys NSP resources for a given subscription, resource group and NSP name.
@@ -9,7 +9,7 @@ This script updates an exiating Network Security Perimeter (NSP) configuration a
 **Prerequisites:**
 - PowerShell 7+ or Windows PowerShell with required Az modules installed.
 - Signed-in Azure account with sufficient permissions to create/modify networking and resource-group scoped resources.
-- `nat-nsp-deploy.ps1` must be present in the current working directory.
+- `ip-rules-nsp-deploy.ps1` must be present in the current working directory.
 
 **Common parameters:**
 - `-Subscription_Id` : Azure subscription GUID to target.
@@ -19,9 +19,20 @@ This script updates an exiating Network Security Perimeter (NSP) configuration a
 - `-Regions` : An array of Azure regions to target (e.g., `@("westus","eastus")`). Use `"*"` for all regions.
 - `-NSP_ProfileNamePrefix` : *(optional)* prefix used when creating region-specific profiles (default: `databricks-nat`).
 - `-NSP_Profile` : *(optional)* single profile name; if set, all IPs are added to this profile and `-NSP_ProfileNamePrefix` is ignored.
+- `-NSP_Type` : Type of ip list to be created, either (default) SE (service endpoint) or NAT (serverless NAT ips)
 
 
-**Example usage: (regional profiles)**
+**Example usage: (regional NAT ip profiles)**
+```powershell
+./nat-nsp-deploy.ps1 \
+	-SubscriptionId "########-####-####-####-############" \
+	-NetworkSecurityPerimeterName "databricks-nsp" \
+	-ResourceGroupName "brn-common-wus" \
+	-NSP_Type "NAT" \
+	-Regions @("westus", "westus2", "eastus", "eastus2")
+```
+
+**Example usage: (regional service endpoint ip profiles)**
 ```powershell
 ./nat-nsp-deploy.ps1 \
 	-SubscriptionId "########-####-####-####-############" \
