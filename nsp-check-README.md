@@ -6,12 +6,13 @@ All actions are logged to a timestamped log file (`nsp-migrate-log_<timestamp>.l
 
 ---
 
-### How It Works
+### How It Works 
 
 1. Connects to the specified Azure subscription.
 2. Queries Azure Resource Graph for Storage Accounts with VNet ACL rules pointing to known Databricks serverless subnet IDs.
 3. Filters out accounts that are DBFS (workspace default storage) or already associated with an NSP.
 4. Outputs a report listing the Storage Accounts that require NSP migration.
+
 
 ---
 
