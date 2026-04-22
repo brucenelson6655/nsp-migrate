@@ -186,7 +186,7 @@ if ($associateStorageAccount.Count -eq 0) {
         Write-Host -ForegroundColor DarkCyan "`n- $($sa.name) Resource Group: $resourceGroupName Location: $($sa.location)"
             # check for private endpoint connections and warn if found
         if (Check-PrivateEndpointConnections -storageAccountName $sa.name) {
-            Write-Host -ForegroundColor Green "Warning: Storage Account '$($sa.name)' has private endpoint connections. Manual review of private endpoints and the resource firewall for this storage account is strongly recommended."
+            Write-Host -ForegroundColor Yellow "Warning: Storage Account '$($sa.name)' has private endpoint connections. Manual review of private endpoints and the resource firewall for this storage account is strongly recommended."
         }
     }
 
