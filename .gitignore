@@ -10,3 +10,4 @@ __*
 *.ps1.old
 *.bak
 .DS_Store
+extensions.json
