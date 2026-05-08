@@ -1,6 +1,6 @@
 ## nsp-check.ps1 — Script de Verificación Previa para Migración de NSP
 
-Este script identifica las Cuentas de Azure Storage con ACLs de VNet de Databricks que son candidatas para migración a un Perímetro de Seguridad de Red (NSP). Produce un reporte de las cuentas elegibles sin realizar ningún cambio, por lo que es seguro ejecutarlo como un paso de descubrimiento/planeación antes de ejecutar la migración completa.
+Este script identifica las Cuentas de Azure Storage con IDs de subredes de Databricks allowlisteadas en los firewalls de recursos, que deben migrarse a un Perímetro de Seguridad de Red (NSP). Genera un reporte de las cuentas de almacenamiento donde se requiere acción, sin realizar ningún cambio. Esto hace que sea seguro ejecutarlo como un paso de descubrimiento/planeación antes de ejecutar la migración completa.
 
 El script verificará la cuenta de almacenamiento marcada para migración en busca de puntos finales privados. Si se encuentran puntos finales privados, se necesitarán verificaciones adicionales para determinar si tener ambos tipos de puntos finales fue intencional.
 

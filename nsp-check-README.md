@@ -1,8 +1,8 @@
 ## nsp-check.ps1 — NSP Migration Pre-Check Script
 
-This script identifies Azure Storage Accounts with Databricks VNet ACLs that are candidates for migration to a Network Security Perimeter (NSP). It produces a report of eligible accounts without making any changes, making it safe to run as a discovery/planning step before executing the full migration.
+This script identifies Azure Storage Accounts with Databricks subnet IDs allowlisted in resource firewalls, that should be migrated to a Network Security Perimeter (NSP). It produces a report of storage accounts where action is required, without making any changes. This makes it safe to run as a discovery/planning step before executing the full migration.
 
-The script will check the storage account flagged for migration for private endpoints. If private endpoints are found, further checks will need to be made as to whether having both private endpoints and service endpoints were intended. 
+The script will check whether the storage account flagged for migration is using private endpoints. If private endpoints are found, you will need to check whether having both private endpoints and service endpoints was intended, and ensure that the private endpoint is to route traffic from Databricks
 
 _Having both types of endpoints is technically OK, but using service endpoints diminishes value of securing the storage with private endpoints._
 
