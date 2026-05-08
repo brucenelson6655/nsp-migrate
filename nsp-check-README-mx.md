@@ -2,6 +2,10 @@
 
 Este script identifica las Cuentas de Azure Storage con ACLs de VNet de Databricks que son candidatas para migración a un Perímetro de Seguridad de Red (NSP). Produce un reporte de las cuentas elegibles sin realizar ningún cambio, por lo que es seguro ejecutarlo como un paso de descubrimiento/planeación antes de ejecutar la migración completa.
 
+El script verificará la cuenta de almacenamiento marcada para migración en busca de puntos finales privados. Si se encuentran puntos finales privados, se necesitarán verificaciones adicionales para determinar si tener ambos tipos de puntos finales fue intencional.
+
+_Tener ambos tipos de puntos finales está técnicamente bien, pero usar puntos finales de servicio disminuye el valor de asegurar el almacenamiento con puntos finales privados._
+
 Todas las acciones se registran en un archivo de log con marca de tiempo (`nsp-migrate-log_<timestamp>.log`) en el directorio del script.
 
 ---
@@ -11,7 +15,8 @@ Todas las acciones se registran en un archivo de log con marca de tiempo (`nsp-m
 1. Se conecta a la suscripción de Azure especificada.
 2. Consulta Azure Resource Graph para obtener las Cuentas de Storage con reglas de ACL de VNet que apunten a IDs de subredes serverless conocidas de Databricks.
 3. Filtra las cuentas que son DBFS (almacenamiento predeterminado del workspace) o que ya están asociadas con un NSP.
-4. Genera un reporte que lista las Cuentas de Storage que requieren migración a NSP.
+4. Verifica las Cuentas de Storage identificadas para conexiones de punto final privado e incluye advertencias en el reporte si se encuentran algunas.
+5. Genera un reporte que lista las Cuentas de Storage que requieren migración a NSP.
 
 
 ---
@@ -53,6 +58,8 @@ El script imprime un resumen de las Cuentas de Storage que:
 - Tienen reglas de ACL de VNet que apuntan a subredes serverless de Databricks
 - **No** son DBFS (almacenamiento predeterminado del workspace)
 - **No** están ya asociadas con un NSP
+
+El reporte puede incluir advertencias para Cuentas de Storage con conexiones de punto final privado, recomendando una revisión manual de los puntos finales privados y el firewall de recursos.
 
 Ejemplo de salida:
 ```

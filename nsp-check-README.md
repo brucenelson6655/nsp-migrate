@@ -2,6 +2,10 @@
 
 This script identifies Azure Storage Accounts with Databricks VNet ACLs that are candidates for migration to a Network Security Perimeter (NSP). It produces a report of eligible accounts without making any changes, making it safe to run as a discovery/planning step before executing the full migration.
 
+The script will check the storage account flagged for migration for private endpoints. If private endpoints are found, further checks will need to be made as to whether having both private endpoints and service endpoints were intended. 
+
+_Having both types of endpoints is technically OK, but using service endpoints diminishes value of securing the storage with private endpoints._
+
 All actions are logged to a timestamped log file (`nsp-migrate-log_<timestamp>.log`) in the script's directory.
 
 ---
@@ -11,7 +15,8 @@ All actions are logged to a timestamped log file (`nsp-migrate-log_<timestamp>.l
 1. Connects to the specified Azure subscription.
 2. Queries Azure Resource Graph for Storage Accounts with VNet ACL rules pointing to known Databricks serverless subnet IDs.
 3. Filters out accounts that are DBFS (workspace default storage) or already associated with an NSP.
-4. Outputs a report listing the Storage Accounts that require NSP migration.
+4. Checks identified Storage Accounts for private endpoint connections and includes warnings in the report if any are found.
+5. Outputs a report listing the Storage Accounts that require NSP migration.
 
 
 ---
@@ -53,6 +58,8 @@ The script prints a summary of Storage Accounts that:
 - Have VNet ACL rules pointing to Databricks serverless subnets
 - Are **not** DBFS (workspace default storage)
 - Are **not** already associated with an NSP
+
+The report may include warnings for Storage Accounts with private endpoint connections, recommending manual review of the private endpoints and resource firewall.
 
 Example output:
 ```
