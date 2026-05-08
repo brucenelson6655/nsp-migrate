@@ -12,3 +12,7 @@ __*
 .DS_Store
 extensions.json
 CLAUDE.md
+.github/prompts/
+.github/workflows/
+.github/ISSUE_TEMPLATE/
+.github/PULL_REQUEST_TEMPLATE/
